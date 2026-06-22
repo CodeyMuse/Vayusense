@@ -1,0 +1,518 @@
+# REPLIT AGENT BUILD BRIEF
+## ET AI Hackathon 2026 — Problem Statement 5
+### AI-Powered Urban Air Quality Intelligence Platform
+
+---
+
+> **Paste this entire document into Replit Agent as your build prompt.**
+
+---
+
+## 1. APP OVERVIEW
+
+**App Name:** VayuSense — Urban Air Intelligence Command Centre
+
+**One-line description:** A real-time AI-powered air quality intelligence dashboard that fuses CAAQMS sensor data, weather forecasts, and geospatial source mapping to give city administrators and citizens predictive pollution alerts and evidence-backed enforcement recommendations.
+
+**Core problem it solves:** India's 900+ air quality monitoring stations produce data that sits in dashboards nobody acts on. City administrators lack the intelligence layer to connect sensor readings to specific pollution sources, predict tomorrow's AQI before it becomes dangerous, and deploy inspectors to the right locations. VayuSense closes that gap.
+
+**Target users:**
+- Primary: City pollution control officers / municipal administrators
+- Secondary: Citizens checking ward-level health risk
+
+---
+
+## 2. FULL FEATURE LIST
+
+### CORE (must have — judges will look for these)
+
+1. **Live AQI Dashboard** — Real-time AQI cards for 6 Indian cities (Delhi, Mumbai, Kolkata, Bengaluru, Chennai, Pune) with colour-coded severity bands (Good / Satisfactory / Moderate / Poor / Very Poor / Severe)
+2. **Interactive Geospatial Map** — Leaflet.js map showing monitoring stations, pollution hotspot heatmap overlay, and clickable markers with station details
+3. **AI Predictive Forecasting Panel** — 72-hour ward-level AQI forecast using a simple ML model (polynomial regression or LSTM simulation on synthetic data); displays as a chart with confidence band
+4. **Pollution Source Attribution Engine** — AI agent that analyses current AQI + wind direction + land-use data and attributes pollution % by source category (vehicles, construction, industries, crop burning, dust) — displayed as an animated donut chart
+5. **Enforcement Intelligence Module** — Ranked list of enforcement action recommendations with source type, GPS coordinates, confidence score, and a "Generate Notice" button that produces a downloadable PDF notice
+6. **Citizen Health Advisory Panel** — Ward-level health risk score, vulnerable population mapping (hospitals/schools overlay on map), and advisory text generated via Claude API in English + one regional language toggle (Hindi)
+7. **Multi-City Comparison View** — Side-by-side AQI trend line charts across all 6 cities for the past 30 days
+
+### NICE-TO-HAVE (bonus points with judges)
+
+8. **AI Chat Copilot** — Sidebar chat powered by Claude API where administrators can ask questions like "Which zone will breach AQI 300 tomorrow?" and get cited, data-backed answers
+9. **Intervention Effectiveness Tracker** — Simulated before/after AQI improvement chart after a mock intervention is "applied"
+10. **Alert Subscription Panel** — Form to subscribe to ward-level alerts (stored in local state; no real email sending needed for demo)
+11. **Animated Data Ingestion Feed** — Live scrolling ticker showing simulated sensor readings arriving in real time
+
+---
+
+## 3. TECH STACK
+
+**Frontend:**
+- React (Vite scaffold)
+- Tailwind CSS for styling
+- Recharts for line/bar/donut charts
+- Leaflet.js + React-Leaflet for the map
+- Framer Motion for animations
+
+**Backend:**
+- Node.js + Express (single lightweight server)
+- In-memory data store (no database needed; all data is mock/seeded)
+
+**AI Integration:**
+- Anthropic Claude API (`claude-sonnet-4-6`) via the `/v1/messages` endpoint for:
+  - Generating health advisories in regional languages
+  - Powering the AI Chat Copilot
+  - Generating enforcement notice text
+
+**APIs (free, no auth or mock-friendly):**
+- **OpenWeatherMap Free Tier** — `https://api.openweathermap.org/data/2.5/weather?q={city}&appid={key}` — for real wind speed/direction to feed source attribution logic. Use API key from env var `OPENWEATHER_KEY`. If unavailable, fall back to hardcoded mock weather objects.
+- **WAQI (World Air Quality Index) API** — `https://api.waqi.info/feed/{city}/?token={token}` — for real AQI readings. Free token at waqi.info. Use env var `WAQI_TOKEN`. Fall back to mock data if token absent.
+
+**Deployment target:** Replit (Node.js + Vite full-stack template)
+
+---
+
+## 4. PAGES & USER FLOW
+
+### Page 1: Landing / City Selector (`/`)
+- Full-screen hero with animated background (subtle particle or wave effect using CSS)
+- Headline: "VayuSense — India's Air Intelligence Command Centre"
+- Six city cards with live AQI badges; clicking any card navigates to that city's dashboard
+- Top nav: Logo | Cities | Compare | About
+
+### Page 2: City Dashboard (`/city/:cityName`)
+- **Left sidebar (240px):** Navigation links to each sub-section of the dashboard; city selector dropdown at top
+- **Main content area:** Divided into tabbed sections:
+  - **Tab 1 — Live Overview:** AQI gauge widget (large, circular, colour-coded), pollutant breakdown table (PM2.5, PM10, NO2, SO2, CO, O3), data freshness timestamp
+  - **Tab 2 — Forecast:** 72-hour forecast chart (area chart with confidence band shading), next 3-day summary cards
+  - **Tab 3 — Source Attribution:** Animated donut chart with source categories, wind-rose diagram, attribution confidence score, "last updated" label
+  - **Tab 4 — Enforcement Intel:** Ranked table of hotspots with columns: Zone | Source Type | Confidence | Coordinates | Action; "Generate Notice" button opens a modal with formatted PDF-ready notice text
+  - **Tab 5 — Citizen Advisory:** Ward-level risk cards, vulnerable site map overlay, advisory text in English + Hindi toggle, "Subscribe to Alerts" form
+  - **Tab 6 — AI Copilot:** Split-pane chat interface; user types a question, Claude API responds with data-grounded answer
+
+### Page 3: Multi-City Comparison (`/compare`)
+- 2-column grid of Recharts line charts, one per city, showing 30-day AQI trend
+- Toggle to overlay all cities on a single chart
+- Summary table: City | 7-day avg AQI | Worst pollutant | Trend (↑/↓)
+
+### Page 4: About / Methodology (`/about`)
+- Single-scroll page explaining the platform's data sources, model methodology, and regulatory context (CPCB, NCAP)
+- No interactive elements needed
+
+---
+
+## 5. UI & DESIGN INSTRUCTIONS
+
+### Design Philosophy
+Industrial command-centre aesthetic — this is a tool for administrators making enforcement decisions, not a consumer wellness app. Dark, data-dense, authoritative. The signature element: a **full-width animated AQI gradient bar** at the very top of every city page that pulses from the current AQI colour (green → hazardous maroon) and serves as an ambient environmental indicator.
+
+### Colour Palette
+```
+--bg-primary:     #0A0E1A   (deep navy-black, main background)
+--bg-surface:     #111827   (card/panel background)
+--bg-elevated:    #1C2333   (modals, sidebars)
+--border:         #2D3748   (subtle dividers)
+--accent-cyan:    #00D4FF   (primary interactive, chart lines, links)
+--accent-amber:   #F59E0B   (warnings, moderate AQI)
+--accent-red:     #EF4444   (severe AQI, urgent alerts)
+--accent-green:   #10B981   (good AQI, positive trends)
+--text-primary:   #F1F5F9
+--text-secondary: #94A3B8
+--text-muted:     #4B5563
+```
+
+### AQI Severity Colours (use consistently everywhere)
+```
+Good (0-50):         #10B981 (green)
+Satisfactory (51-100): #84CC16 (lime)
+Moderate (101-200):  #F59E0B (amber)
+Poor (201-300):      #F97316 (orange)
+Very Poor (301-400): #EF4444 (red)
+Severe (401+):       #7C3AED (purple)
+```
+
+### Typography
+- **Display / headings:** `Space Grotesk` (Google Fonts) — technical, modern, slightly geometric
+- **Body / data:** `Inter` — neutral, high readability at small sizes
+- **Monospace / sensor data values:** `JetBrains Mono` — for AQI numbers, coordinates, timestamps
+
+### Layout
+- Max content width: 1440px, centered
+- Sidebar: 240px fixed, collapsible on mobile
+- Cards: 12px border-radius, 1px border in `--border`, subtle `box-shadow: 0 0 0 1px rgba(0,212,255,0.05)`
+- No gradients except the signature top bar and chart fills
+- All charts: dark background, no gridlines except faint horizontal lines in `--border` colour
+
+### Animations
+- **Signature top bar:** CSS `@keyframes pulse-aqi` — slowly oscillates opacity between 0.7 and 1.0
+- **AQI gauge:** SVG arc that animates from 0 to current value on page load (500ms ease-out)
+- **Map heatmap:** Opacity fade-in on load (300ms)
+- **Donut chart:** Framer Motion `animate` on each slice, staggered 100ms apart
+- **Chat messages:** Slide up from bottom with opacity fade (150ms)
+- No parallax or scroll-triggered animations (keeps performance clean)
+
+### UI Components
+- Custom `<AQIBadge>` component: pill shape, AQI value + label, coloured by severity
+- Custom `<StatCard>` component: icon + metric + delta indicator
+- `<HotspotTable>` with alternating row shading and a pulsing red dot for critical rows
+- Modal for enforcement notice generation with a "Copy to Clipboard" and "Print" button
+- Toast notifications (bottom-right) for simulated real-time alerts
+
+---
+
+## 6. DATA & APIS
+
+### Mock Data Seed (hardcode this if APIs are unavailable)
+
+```javascript
+// cities.js — seed data
+export const CITIES = [
+  {
+    id: "delhi",
+    name: "Delhi",
+    lat: 28.6139, lng: 77.2090,
+    currentAQI: 218,
+    dominantPollutant: "PM2.5",
+    pollutants: { PM25: 124, PM10: 189, NO2: 67, SO2: 22, CO: 1.4, O3: 34 },
+    stations: [
+      { id: "DEL-01", name: "Anand Vihar", lat: 28.6469, lng: 77.3160, aqi: 287 },
+      { id: "DEL-02", name: "Lodhi Road", lat: 28.5921, lng: 77.2274, aqi: 163 },
+      { id: "DEL-03", name: "RK Puram", lat: 28.5646, lng: 77.1730, aqi: 201 }
+    ],
+    sourceAttribution: [
+      { source: "Vehicles", pct: 38 },
+      { source: "Industry", pct: 24 },
+      { source: "Construction Dust", pct: 19 },
+      { source: "Crop Burning", pct: 12 },
+      { source: "Other", pct: 7 }
+    ],
+    forecast: generateForecast(218), // 72 hourly values
+    hotspots: [
+      { zone: "Anand Vihar", sourceType: "Traffic / Diesel Vehicles", confidence: 91, lat: 28.6469, lng: 77.3160, severity: "critical" },
+      { zone: "Narela Industrial Area", sourceType: "Industrial Emissions", confidence: 84, lat: 28.8561, lng: 77.0946, severity: "high" },
+      { zone: "Burari Road Construction", sourceType: "Construction Dust", confidence: 76, lat: 28.7259, lng: 77.1934, severity: "medium" }
+    ],
+    weather: { windSpeed: 3.2, windDir: "NW", temp: 28, humidity: 62 }
+  },
+  {
+    id: "mumbai",
+    name: "Mumbai",
+    lat: 19.0760, lng: 72.8777,
+    currentAQI: 156,
+    dominantPollutant: "PM10",
+    pollutants: { PM25: 78, PM10: 134, NO2: 54, SO2: 14, CO: 0.9, O3: 41 },
+    stations: [
+      { id: "MUM-01", name: "Bandra", lat: 19.0596, lng: 72.8295, aqi: 178 },
+      { id: "MUM-02", name: "Colaba", lat: 18.9067, lng: 72.8147, aqi: 121 },
+      { id: "MUM-03", name: "Borivali", lat: 19.2307, lng: 72.8567, aqi: 167 }
+    ],
+    sourceAttribution: [
+      { source: "Vehicles", pct: 44 },
+      { source: "Industry", pct: 28 },
+      { source: "Construction Dust", pct: 15 },
+      { source: "Sea Salt Aerosol", pct: 8 },
+      { source: "Other", pct: 5 }
+    ],
+    forecast: generateForecast(156),
+    hotspots: [
+      { zone: "Dharavi Industrial Cluster", sourceType: "Industrial Emissions", confidence: 88, lat: 19.0422, lng: 72.8541, severity: "high" },
+      { zone: "Eastern Express Highway", sourceType: "Traffic / Diesel Vehicles", confidence: 82, lat: 19.1032, lng: 72.8614, severity: "high" }
+    ],
+    weather: { windSpeed: 5.1, windDir: "SW", temp: 32, humidity: 78 }
+  },
+  // Add Kolkata, Bengaluru, Chennai, Pune with similar structure
+];
+
+function generateForecast(baseAQI) {
+  return Array.from({ length: 72 }, (_, i) => ({
+    hour: i,
+    aqi: Math.round(baseAQI + Math.sin(i / 8) * 30 + (Math.random() - 0.5) * 20),
+    lower: Math.round(baseAQI + Math.sin(i / 8) * 30 - 15),
+    upper: Math.round(baseAQI + Math.sin(i / 8) * 30 + 15)
+  }));
+}
+```
+
+### Data Models
+
+```typescript
+// Types for the application
+
+interface Station {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  aqi: number;
+}
+
+interface PollutantReading {
+  PM25: number;
+  PM10: number;
+  NO2: number;
+  SO2: number;
+  CO: number;
+  O3: number;
+}
+
+interface SourceAttribution {
+  source: string;
+  pct: number;
+}
+
+interface ForecastPoint {
+  hour: number;
+  aqi: number;
+  lower: number;
+  upper: number;
+}
+
+interface Hotspot {
+  zone: string;
+  sourceType: string;
+  confidence: number; // 0-100
+  lat: number;
+  lng: number;
+  severity: "critical" | "high" | "medium";
+}
+
+interface CityData {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  currentAQI: number;
+  dominantPollutant: string;
+  pollutants: PollutantReading;
+  stations: Station[];
+  sourceAttribution: SourceAttribution[];
+  forecast: ForecastPoint[];
+  hotspots: Hotspot[];
+  weather: { windSpeed: number; windDir: string; temp: number; humidity: number };
+}
+```
+
+### API Integration Details
+
+**Claude API (Anthropic):**
+- Endpoint: `POST https://api.anthropic.com/v1/messages`
+- Model: `claude-sonnet-4-6`
+- Max tokens: `1000`
+- No API key needed in client code (handled by Replit secrets — store as `ANTHROPIC_API_KEY`)
+- Use for:
+  1. Health advisory generation: Prompt = `"Generate a 3-sentence public health advisory for {cityName} with current AQI {aqi}. Include specific precautions for vulnerable groups. Then translate to Hindi. Format as JSON: {english: '...', hindi: '...'}"`
+  2. Chat copilot: Full conversation history in messages array; system prompt = `"You are VayuSense, an AI air quality analyst for Indian cities. You have access to current AQI, pollutant levels, and 72-hour forecasts. Answer administrator questions concisely with data references. Current city data: {JSON.stringify(cityData)}"`
+  3. Enforcement notice: Prompt = `"Generate a formal municipal enforcement notice for: Zone: {zone}, Source Type: {sourceType}, Current AQI: {aqi}. Include regulatory references to CPCB norms. Keep under 200 words."`
+
+**OpenWeatherMap (optional enhancement):**
+- Endpoint: `GET https://api.openweathermap.org/data/2.5/weather?q={city},IN&appid={OPENWEATHER_KEY}&units=metric`
+- Use wind direction and speed to dynamically adjust source attribution weights
+
+**WAQI (optional enhancement):**
+- Endpoint: `GET https://api.waqi.info/feed/{city}/?token={WAQI_TOKEN}`
+- Returns real AQI and pollutant breakdown; merge with mock data structure
+
+---
+
+## 7. STEP-BY-STEP BUILD INSTRUCTIONS FOR REPLIT AGENT
+
+Follow these instructions exactly, in order. Do not skip steps.
+
+---
+
+### STEP 1 — Project Setup
+
+1. Create a new Replit project using the **Node.js + Vite React** template (full-stack).
+2. Install the following npm packages:
+   ```
+   npm install react-router-dom recharts react-leaflet leaflet framer-motion @anthropic-ai/sdk axios lucide-react
+   ```
+3. Install Tailwind CSS:
+   ```
+   npm install -D tailwindcss postcss autoprefixer
+   npx tailwindcss init -p
+   ```
+4. Configure `tailwind.config.js` to scan `./src/**/*.{js,jsx}`.
+5. Add Tailwind directives to `src/index.css`.
+6. Add Google Fonts to `index.html`:
+   ```html
+   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+   ```
+7. Set CSS custom properties in `:root` of `index.css` using the colour palette defined in Section 5.
+8. Set `body { background-color: #0A0E1A; font-family: 'Inter', sans-serif; }`.
+
+---
+
+### STEP 2 — Create Data Layer
+
+1. Create `src/data/cities.js` containing the full `CITIES` array from Section 6, including all 6 cities (Delhi, Mumbai, Kolkata, Bengaluru, Chennai, Pune). Generate mock data for the last 4 cities following the same structure as Delhi/Mumbai above, with plausible AQI values: Kolkata 172, Bengaluru 134, Chennai 148, Pune 162.
+2. Create `src/data/aqiUtils.js` with these utility functions:
+   - `getAQILabel(aqi)` — returns string label ("Good", "Satisfactory", etc.)
+   - `getAQIColor(aqi)` — returns hex colour from the AQI severity palette
+   - `getAQITextColor(aqi)` — returns black or white for readable text on the AQI colour
+   - `formatPollutant(key, value)` — returns formatted string with units (µg/m³ or ppb)
+3. Create `src/services/claudeService.js` with three async functions:
+   - `generateHealthAdvisory(cityName, aqi, pollutants)` — calls Claude API, returns `{english, hindi}`
+   - `generateEnforcementNotice(hotspot, cityAQI)` — calls Claude API, returns notice text string
+   - `chatWithCopilot(messages, cityData)` — calls Claude API with conversation history, returns assistant reply string
+   Each function should `fetch` to a backend Express route (not directly from browser to avoid CORS/key exposure).
+4. Create Express server at `server/index.js` with three POST routes:
+   - `POST /api/advisory` — proxies to Claude API for health advisory
+   - `POST /api/notice` — proxies to Claude API for enforcement notice
+   - `POST /api/chat` — proxies to Claude API for copilot chat
+   Read `ANTHROPIC_API_KEY` from `process.env`. Return JSON responses.
+
+---
+
+### STEP 3 — Create Shared Components
+
+Create `src/components/` directory with these files:
+
+1. **`AQIBadge.jsx`** — Pill component. Props: `aqi` (number). Displays AQI value + label, background uses `getAQIColor(aqi)`. Font: JetBrains Mono for number, Inter for label.
+
+2. **`StatCard.jsx`** — Card component. Props: `icon` (Lucide component), `label`, `value`, `delta`, `unit`. Dark surface background, cyan accent on icon, green/red for positive/negative delta.
+
+3. **`AQIGauge.jsx`** — Circular SVG gauge. Props: `aqi`, `size`. Draws an arc from 0° to the angle corresponding to aqi/500. Animates on mount. Shows AQI number in JetBrains Mono at center, label below. Background arc in `--border` colour, value arc in `getAQIColor(aqi)`.
+
+4. **`CityMap.jsx`** — React-Leaflet map. Props: `city` (CityData object). Uses dark tile layer: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png`. Places circular markers at each station location, sized and coloured by AQI. Shows a heatmap-style overlay (use Leaflet CSS radial gradients via custom markers with blur shadows). On marker click, show a popup with station name, AQI badge, dominant pollutant.
+
+5. **`ForecastChart.jsx`** — Recharts AreaChart. Props: `forecast` (array of ForecastPoint). X-axis: hours from now ("+0h", "+6h", etc. at 6h intervals). Y-axis: AQI. Three areas: upper confidence (very faint), main forecast (cyan, semi-transparent fill), lower confidence (very faint). Tooltip shows exact AQI + time. Dark chart background.
+
+6. **`SourceDonut.jsx`** — Recharts PieChart with Framer Motion. Props: `attribution` (array). Each slice coloured distinctly: use `["#00D4FF", "#F59E0B", "#EF4444", "#10B981", "#7C3AED"]`. Animated slice entry staggered by 100ms. Centre label shows dominant source. Legend below chart.
+
+7. **`HotspotTable.jsx`** — Props: `hotspots`, `onGenerateNotice`. Renders a styled table. Critical rows have a pulsing red dot (CSS animation). Confidence shown as a thin progress bar. "Generate Notice" button per row calls `onGenerateNotice(hotspot)`.
+
+8. **`ChatCopilot.jsx`** — Split panel. Top: scrollable message list. Bottom: input + send button. User messages right-aligned (dark cyan bg), assistant messages left-aligned (dark surface bg). Loading state: three animated dots. On submit, calls `chatWithCopilot` service.
+
+9. **`Navbar.jsx`** — Top navigation bar. Logo (VayuSense in Space Grotesk bold, with a small cyan dot). Links to Home, Compare, About. Right side: live clock updating every second. Background: semi-transparent dark with backdrop blur.
+
+10. **`Sidebar.jsx`** — 240px left sidebar for city dashboard. City selector dropdown at top. Navigation links for each tab (icons from Lucide: Wind, BarChart2, Map, AlertTriangle, Heart, MessageSquare). Active link: cyan left border accent.
+
+11. **`AQITopBar.jsx`** — Full-width bar at top of city pages (below Navbar). Shows current AQI colour as background with pulsing animation. Text: "{cityName} Air Quality Index: {aqi} — {label}". Font: Space Grotesk bold.
+
+12. **`NoticeModal.jsx`** — Modal overlay. Props: `notice` (string), `hotspot`, `onClose`. Shows formatted notice text. "Copy to Clipboard" button (uses navigator.clipboard). "Print" button (window.print on modal content). Close button top-right.
+
+---
+
+### STEP 4 — Build Pages
+
+**`src/pages/LandingPage.jsx`:**
+1. Full-viewport hero section. Background: `--bg-primary`. Large heading: "VayuSense" in Space Grotesk 72px bold, colour white. Subheading: "India's Urban Air Intelligence Command Centre" in 24px `--text-secondary`.
+2. Below heading: a single-line animated ticker showing current AQI values for all 6 cities in their severity colours, scrolling left continuously via CSS marquee animation.
+3. Below ticker: grid of 6 city cards (3 columns, 2 rows on desktop; 1 column on mobile). Each card: city name, large AQI number (JetBrains Mono), AQI badge, dominant pollutant, a mini sparkline (last 24h trend using Recharts tiny LineChart). On hover: card lifts (transform: translateY(-4px)), cyan border appears. On click: navigate to `/city/{cityId}`.
+4. Navbar at top (no sidebar on landing page).
+
+**`src/pages/CityDashboard.jsx`:**
+1. Read `cityId` from URL params. Find city from `CITIES` array. If not found, redirect to `/`.
+2. Layout: `Navbar` (full width) + `AQITopBar` + flex row of `Sidebar` (240px) + main content area.
+3. Main content: Tab bar at top (6 tabs). Tab content rendered below.
+4. **Tab 1 — Live Overview:** Row of 4 `StatCard` components (AQI, PM2.5, PM10, NO2). Below: `AQIGauge` (left, 50% width) + pollutant table (right, 50% width). Pollutant table: rows for PM2.5, PM10, NO2, SO2, CO, O3 with value, unit, and a thin bar showing % of safe limit.
+5. **Tab 2 — Forecast:** `ForecastChart` full width. Below: 3 summary cards for "Next 6h", "Next 24h", "Next 72h" showing predicted peak AQI and label.
+6. **Tab 3 — Source Attribution:** `SourceDonut` left (50%). Right (50%): wind info card (speed, direction shown as compass arrow SVG), explanation text of top 2 sources, confidence score badge.
+7. **Tab 4 — Enforcement Intel:** `HotspotTable` full width. When "Generate Notice" clicked: call `generateEnforcementNotice`, show loading spinner, then open `NoticeModal` with result.
+8. **Tab 5 — Citizen Advisory:** On mount, call `generateHealthAdvisory` for current city (show loading skeleton while waiting). Display returned English advisory. "Show in Hindi" toggle switches to Hindi text. Below: `CityMap` showing hospitals and schools as special markers (use school/hospital emoji as Leaflet icon). Ward risk score cards below map.
+9. **Tab 6 — AI Copilot:** `ChatCopilot` component full height. Pre-populate with 2 starter messages as examples (shown greyed out before user first types). System context includes city data.
+
+**`src/pages/ComparePage.jsx`:**
+1. Navbar at top.
+2. Heading: "Multi-City Air Quality Comparison"
+3. Toggle: "Individual Charts" / "Overlay View"
+4. Individual: 2-column grid, one `ForecastChart` per city (labelled with city name and current AQI badge).
+5. Overlay: Single `ForecastChart` with 6 line series, one per city, each in a distinct colour. Legend below.
+6. Summary table below charts: columns City | Current AQI | 7-day Avg | Worst Pollutant | Trend.
+
+**`src/pages/AboutPage.jsx`:**
+1. Single-scroll page, max-width 800px centered.
+2. Sections: Platform Overview, Data Sources, Model Methodology, Regulatory Context, Team.
+3. Clean prose layout, no interactive elements.
+
+---
+
+### STEP 5 — Routing
+
+In `src/App.jsx`:
+```jsx
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+// Import all 4 pages
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/city/:cityId" element={<CityDashboard />} />
+        <Route path="/compare" element={<ComparePage />} />
+        <Route path="/about" element={<AboutPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+```
+
+---
+
+### STEP 6 — Express Server Setup
+
+In `server/index.js`:
+1. Import `express`, `cors`, `axios`.
+2. `app.use(cors())` and `app.use(express.json())`.
+3. Implement the three Claude API proxy routes from Step 2.
+4. Each route constructs the appropriate prompt, calls `https://api.anthropic.com/v1/messages` with the correct headers (`x-api-key: process.env.ANTHROPIC_API_KEY`, `anthropic-version: 2023-06-01`), and returns the parsed response text.
+5. Implement a `GET /api/cities` route that returns the full `CITIES` mock data array (import from `../src/data/cities.js`).
+6. Add error handling: if Claude API fails, return a fallback hardcoded response so the UI never breaks.
+7. Server listens on `process.env.PORT || 3001`.
+
+Update `vite.config.js` to proxy `/api` requests to `http://localhost:3001`:
+```js
+server: {
+  proxy: {
+    '/api': 'http://localhost:3001'
+  }
+}
+```
+
+Add to `package.json` scripts:
+```json
+"start": "concurrently \"node server/index.js\" \"vite\""
+```
+Install `concurrently`: `npm install -D concurrently`.
+
+---
+
+### STEP 7 — Simulated Real-Time Data
+
+1. In `CityDashboard.jsx`, set up a `useEffect` with `setInterval` (every 30 seconds) that randomly nudges the city's current AQI by ±5 to simulate live sensor updates. Update component state, not the global mock data.
+2. Add an `<AnimatedTicker />` component to the AQI top bar — a subtle text that says "Last updated: {timestamp}" and refreshes each tick.
+3. On the landing page, apply the same interval to all 6 city cards.
+
+---
+
+### STEP 8 — Polish & Final Checks
+
+1. Add `<title>VayuSense — Urban Air Intelligence</title>` to `index.html`.
+2. Add a favicon: use a simple SVG circle filled with a gradient from green to red (save as `public/favicon.svg`).
+3. Make all pages responsive: sidebar collapses to a hamburger menu on screens < 768px; grid goes to 1 column.
+4. Add a global loading skeleton (grey pulse animation) that shows while city data and Claude responses load.
+5. Add Framer Motion `AnimatePresence` on tab switching with a 150ms opacity transition.
+6. Test that every button and nav link works. Test the Claude API integration with a real API key in Replit Secrets (`ANTHROPIC_API_KEY`). Verify fallback text appears if the API key is absent.
+7. Ensure the Leaflet map does not crash on SSR — add `typeof window !== 'undefined'` guard if needed.
+8. Add a dismissible banner at the top of the landing page: "🚧 Demo mode: AQI data is simulated. Real integrations available via WAQI and OpenWeatherMap APIs."
+
+---
+
+### STEP 9 — Demo Video Preparation (Notes for Hackathon)
+
+Structure the live demo as:
+1. Open landing page → show 6 city cards with live AQI
+2. Click Delhi → walk through Tab 1 (gauge + pollutants)
+3. Tab 2 — show 72h forecast chart
+4. Tab 3 — show source attribution donut, mention wind direction logic
+5. Tab 4 — click "Generate Notice" → show Claude-generated enforcement notice
+6. Tab 5 — show health advisory in Hindi toggle
+7. Tab 6 — ask AI Copilot: "Which zone in Delhi will breach AQI 300 tomorrow?"
+8. Open Compare page — show multi-city overlay
+
+Total demo time target: 3–4 minutes.
+
+---
+
+*End of Replit Agent Build Brief.*
+*Hackathon: ET AI Hackathon 2026 | Problem Statement 5: AI-Powered Urban Air Quality Intelligence*
