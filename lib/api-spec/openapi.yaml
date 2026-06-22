@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: VayuSense Urban Air Quality Intelligence Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: cities
+    description: City air quality data
+  - name: ai
+    description: AI-powered features (advisories, notices, chat)
 paths:
   /healthz:
     get:
@@ -24,6 +28,127 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /cities:
+    get:
+      operationId: getCities
+      tags: [cities]
+      summary: Get all cities
+      description: Returns AQI data for all monitored cities
+      responses:
+        "200":
+          description: List of cities with AQI data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CityData"
+
+  /cities/{cityId}:
+    get:
+      operationId: getCity
+      tags: [cities]
+      summary: Get a single city
+      description: Returns detailed AQI data for a specific city
+      parameters:
+        - name: cityId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: City AQI data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CityData"
+        "404":
+          description: City not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /ai/advisory:
+    post:
+      operationId: generateAdvisory
+      tags: [ai]
+      summary: Generate health advisory
+      description: Generates a bilingual health advisory using Claude AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdvisoryInput"
+      responses:
+        "200":
+          description: Generated health advisory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdvisoryResult"
+        "500":
+          description: Generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /ai/notice:
+    post:
+      operationId: generateNotice
+      tags: [ai]
+      summary: Generate enforcement notice
+      description: Generates a formal municipal enforcement notice using Claude AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoticeInput"
+      responses:
+        "200":
+          description: Generated enforcement notice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoticeResult"
+        "500":
+          description: Generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /ai/chat:
+    post:
+      operationId: sendChatMessage
+      tags: [ai]
+      summary: Chat with AI copilot
+      description: Sends a message to the VayuSense AI copilot and receives a response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResult"
+        "500":
+          description: Generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +159,219 @@ components:
       required:
         - status
 
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Station:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        aqi:
+          type: integer
+      required: [id, name, lat, lng, aqi]
+
+    PollutantReading:
+      type: object
+      properties:
+        PM25:
+          type: number
+        PM10:
+          type: number
+        NO2:
+          type: number
+        SO2:
+          type: number
+        CO:
+          type: number
+        O3:
+          type: number
+      required: [PM25, PM10, NO2, SO2, CO, O3]
+
+    SourceAttribution:
+      type: object
+      properties:
+        source:
+          type: string
+        pct:
+          type: number
+      required: [source, pct]
+
+    ForecastPoint:
+      type: object
+      properties:
+        hour:
+          type: integer
+        aqi:
+          type: integer
+        lower:
+          type: integer
+        upper:
+          type: integer
+      required: [hour, aqi, lower, upper]
+
+    Hotspot:
+      type: object
+      properties:
+        zone:
+          type: string
+        sourceType:
+          type: string
+        confidence:
+          type: integer
+        lat:
+          type: number
+        lng:
+          type: number
+        severity:
+          type: string
+          enum: [critical, high, medium]
+      required: [zone, sourceType, confidence, lat, lng, severity]
+
+    WeatherData:
+      type: object
+      properties:
+        windSpeed:
+          type: number
+        windDir:
+          type: string
+        temp:
+          type: number
+        humidity:
+          type: number
+      required: [windSpeed, windDir, temp, humidity]
+
+    CityData:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        currentAQI:
+          type: integer
+        dominantPollutant:
+          type: string
+        pollutants:
+          $ref: "#/components/schemas/PollutantReading"
+        stations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Station"
+        sourceAttribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceAttribution"
+        forecast:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForecastPoint"
+        hotspots:
+          type: array
+          items:
+            $ref: "#/components/schemas/Hotspot"
+        weather:
+          $ref: "#/components/schemas/WeatherData"
+        trend30d:
+          type: array
+          items:
+            type: integer
+      required:
+        - id
+        - name
+        - lat
+        - lng
+        - currentAQI
+        - dominantPollutant
+        - pollutants
+        - stations
+        - sourceAttribution
+        - forecast
+        - hotspots
+        - weather
+        - trend30d
+
+    AdvisoryInput:
+      type: object
+      properties:
+        cityName:
+          type: string
+        aqi:
+          type: integer
+        pollutants:
+          $ref: "#/components/schemas/PollutantReading"
+      required: [cityName, aqi, pollutants]
+
+    AdvisoryResult:
+      type: object
+      properties:
+        english:
+          type: string
+        hindi:
+          type: string
+      required: [english, hindi]
+
+    NoticeInput:
+      type: object
+      properties:
+        zone:
+          type: string
+        sourceType:
+          type: string
+        cityAQI:
+          type: integer
+        confidence:
+          type: integer
+        cityName:
+          type: string
+      required: [zone, sourceType, cityAQI, confidence, cityName]
+
+    NoticeResult:
+      type: object
+      properties:
+        notice:
+          type: string
+      required: [notice]
+
+    ChatMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+      required: [role, content]
+
+    ChatInput:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+        cityData:
+          $ref: "#/components/schemas/CityData"
+      required: [messages, cityData]
+
+    ChatResult:
+      type: object
+      properties:
+        reply:
+          type: string
+      required: [reply]

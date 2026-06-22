@@ -1,0 +1,1 @@
+- [VayuSense stack notes](vayusense-stack.md) — react-router-dom (not wouter), Leaflet needs icon fix + CSS import, Claude uses claude-sonnet-4-6

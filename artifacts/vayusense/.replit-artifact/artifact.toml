@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "VayuSense — Urban Air Intelligence"
+version = "1.0.0"
+id = "artifacts/vayusense"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25782
+
+[services.development]
+run = "pnpm --filter @workspace/vayusense run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/vayusense", "run", "build" ]
+publicDir = "artifacts/vayusense/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25782"
+BASE_PATH = "/"
